@@ -135,7 +135,8 @@ contract DreamAcademyLending {
         address tokenAddress,
         uint256 amount
     ) external {
-        require(checkLT(tokenAddress, amount));
+        if (getAccruedSupplyAmount(tokenAddress) > 0)
+            require(checkLT(tokenAddress, amount));
     }
 
     function checkLT(
