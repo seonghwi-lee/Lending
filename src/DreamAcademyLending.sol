@@ -169,12 +169,12 @@ contract DreamAcademyLending {
 
         console.log(
             "asd",
-            (_totalReserve[user]) / _totalBorrowed[user],
-            liquidThreshold * 1e2
+            ((_totalReserve[user]) * 100) / _totalBorrowed[user],
+            liquidThreshold
         );
         require(
-            (_totalReserve[user]) / _totalBorrowed[user] >=
-                liquidThreshold * 1e2
+            ((_totalReserve[user]) * 100) / _totalBorrowed[user] >=
+                liquidThreshold
         );
 
         if (address(usdc) == tokenAddress) {
