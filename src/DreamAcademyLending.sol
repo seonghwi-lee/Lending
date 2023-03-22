@@ -159,10 +159,23 @@ contract DreamAcademyLending {
         address tokenAddress,
         uint256 amount
     ) external {
-        console.log("supplyAmount", getAccruedSupplyAmount(tokenAddress));
-        if (getAccruedSupplyAmount(tokenAddress) > 0) {
+        console.log("supplyAmount", getAccruedSupplyAmount(user, tokenAddress));
+        if (getAccruedSupplyAmount(user, tokenAddress) > 0) {
             require(checkLT(tokenAddress, amount), "23");
         }
+
+        _totalReserve[user] = getReserve(user);
+        _totalBorrowed[user] = getBorrowed(user);
+
+        console.log(
+            "asd",
+            (_totalReserve[user]) / _totalBorrowed[user],
+            liquidThreshold * 1e2
+        );
+        require(
+            (_totalReserve[user]) / _totalBorrowed[user] >=
+                liquidThreshold * 1e2
+        );
 
         if (address(usdc) == tokenAddress) {
             console.log(
@@ -176,7 +189,8 @@ contract DreamAcademyLending {
                     dreamOracle.getPrice(tokenAddress)) /
                     1e18 /
                     4 >=
-                    (amount)
+                    amount,
+                "1"
             );
             require(usdc.allowance(msg.sender, address(this)) >= amount, "1");
             usdc.transferFrom(msg.sender, address(this), amount);
