@@ -162,14 +162,12 @@ contract DreamAcademyLending {
         console.log("supplyAmount", getAccruedSupplyAmount(tokenAddress));
         if (getAccruedSupplyAmount(tokenAddress) > 0) {
             require(checkLT(tokenAddress, amount));
-        } else {
-            // require(checkLT(user, tokenAddress, amount));
         }
 
         if (address(usdc) == tokenAddress) {
             require(
                 _borrowed[user][tokenAddress] / 4 >=
-                    amount * dreamOracle.getPrice(tokenAddress)
+                    (amount * dreamOracle.getPrice(tokenAddress)) / 1e18
             );
             require(usdc.allowance(msg.sender, address(this)) >= amount);
             usdc.transferFrom(msg.sender, address(this), amount);
