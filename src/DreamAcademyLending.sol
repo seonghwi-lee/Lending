@@ -161,15 +161,24 @@ contract DreamAcademyLending {
     ) external {
         console.log("supplyAmount", getAccruedSupplyAmount(tokenAddress));
         if (getAccruedSupplyAmount(tokenAddress) > 0) {
-            require(checkLT(tokenAddress, amount));
+            require(checkLT(tokenAddress, amount), "23");
         }
 
         if (address(usdc) == tokenAddress) {
-            require(
-                _borrowed[user][tokenAddress] / 4 >=
-                    (amount * dreamOracle.getPrice(tokenAddress)) / 1e18
+            console.log(
+                "as",
+                _borrowed[user][tokenAddress] / 4,
+                amount,
+                dreamOracle.getPrice(tokenAddress)
             );
-            require(usdc.allowance(msg.sender, address(this)) >= amount);
+            require(
+                (_borrowed[user][tokenAddress] *
+                    dreamOracle.getPrice(tokenAddress)) /
+                    1e18 /
+                    4 >=
+                    (amount)
+            );
+            require(usdc.allowance(msg.sender, address(this)) >= amount, "1");
             usdc.transferFrom(msg.sender, address(this), amount);
         }
     }
