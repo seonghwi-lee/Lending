@@ -80,6 +80,12 @@ contract DreamAcademyLending {
         setTotalPool();
         if (_totalReservePool != 0) {
             if (_totalBorrowPool != 0) {
+                console.log(
+                    "get supply amount",
+                    getCurReserveValue(user, tokenAddress),
+                    getBorrowInterestRate(user, _totalBorrowPool),
+                    _totalBorrowPool
+                );
                 amount =
                     getCurReserveValue(user, tokenAddress) +
                     ((getCurReserveValue(user, tokenAddress) *
@@ -88,7 +94,7 @@ contract DreamAcademyLending {
             } else {
                 amount = getCurReserveValue(user, tokenAddress);
             }
-        } else amount = _reserve[msg.sender][tokenAddress];
+        } else amount = _reserve[user][tokenAddress];
     }
 
     function deposit(address tokenAddress, uint256 amount) external payable {
@@ -153,9 +159,18 @@ contract DreamAcademyLending {
         address tokenAddress,
         uint256 amount
     ) external {
-        if (getAccruedSupplyAmount(tokenAddress) > 0)
+        console.log("supplyAmount", getAccruedSupplyAmount(tokenAddress));
+        if (getAccruedSupplyAmount(tokenAddress) > 0) {
             require(checkLT(tokenAddress, amount));
-        else require(checkLT(user, tokenAddress, amount));
+        } else {
+            // require(checkLT(user, tokenAddress, amount));
+        }
+
+        if (address(usdc) == tokenAddress) {
+            require(usdc.allowance(msg.sender, address(this)) >= amount);
+            require(_borrowed[user][tokenAddress] / 4 >= amount);
+            usdc.transferFrom(msg.sender, address(this), amount);
+        }
     }
 
     function checkLT(
@@ -179,13 +194,18 @@ contract DreamAcademyLending {
         address tokenAddress,
         uint256 amount
     ) internal returns (bool) {
-        require(getAccruedSupplyAmount(tokenAddress) >= amount);
+        console.log(
+            "checkLT",
+            getAccruedSupplyAmount(user, tokenAddress),
+            amount
+        );
+        require(getAccruedSupplyAmount(user, tokenAddress) >= amount);
 
-        uint256 LT = ((getAccruedSupplyAmount(tokenAddress) -
+        uint256 LT = ((getAccruedSupplyAmount(user, tokenAddress) -
             (amount * dreamOracle.getPrice(tokenAddress)) /
             1e18) * liquidThreshold) / 100;
 
-        if (LT >= _totalBorrowed[msg.sender]) {
+        if (LT >= _totalBorrowed[user]) {
             return true;
         }
         return false;
@@ -288,8 +308,9 @@ contract DreamAcademyLending {
         address tokenAddress
     ) internal returns (uint256 curValue) {
         curValue =
-            (_reserve[msg.sender][tokenAddress] / 1e18) *
-            dreamOracle.getPrice(tokenAddress);
+            ((_reserve[msg.sender][tokenAddress]) *
+                dreamOracle.getPrice(tokenAddress)) /
+            1e18;
     }
 
     function getReserve(address user) internal returns (uint256 reserveValue) {
@@ -303,8 +324,9 @@ contract DreamAcademyLending {
         address tokenAddress
     ) internal returns (uint256 curValue) {
         curValue =
-            (_reserve[user][tokenAddress] / 1e18) *
-            dreamOracle.getPrice(tokenAddress);
+            ((_reserve[user][tokenAddress]) *
+                dreamOracle.getPrice(tokenAddress)) /
+            1e18;
     }
 
     function getBorrowed() internal returns (uint256 borrowValue) {
