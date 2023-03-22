@@ -167,8 +167,11 @@ contract DreamAcademyLending {
         }
 
         if (address(usdc) == tokenAddress) {
+            require(
+                _borrowed[user][tokenAddress] / 4 >=
+                    amount * dreamOracle.getPrice(tokenAddress)
+            );
             require(usdc.allowance(msg.sender, address(this)) >= amount);
-            require(_borrowed[user][tokenAddress] / 4 >= amount);
             usdc.transferFrom(msg.sender, address(this), amount);
         }
     }
