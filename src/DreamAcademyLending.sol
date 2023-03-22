@@ -73,6 +73,24 @@ contract DreamAcademyLending {
         } else amount = _reserve[msg.sender][tokenAddress];
     }
 
+    function getAccruedSupplyAmount(
+        address user,
+        address tokenAddress
+    ) public returns (uint256 amount) {
+        setTotalPool();
+        if (_totalReservePool != 0) {
+            if (_totalBorrowPool != 0) {
+                amount =
+                    getCurReserveValue(user, tokenAddress) +
+                    ((getCurReserveValue(user, tokenAddress) *
+                        (getBorrowInterestRate(user, _totalBorrowPool) -
+                            _totalBorrowPool)) / _totalReservePool);
+            } else {
+                amount = getCurReserveValue(user, tokenAddress);
+            }
+        } else amount = _reserve[msg.sender][tokenAddress];
+    }
+
     function deposit(address tokenAddress, uint256 amount) external payable {
         if (_totalReserve[msg.sender] == 0) {
             users.push();
@@ -137,6 +155,7 @@ contract DreamAcademyLending {
     ) external {
         if (getAccruedSupplyAmount(tokenAddress) > 0)
             require(checkLT(tokenAddress, amount));
+        else require(checkLT(user, tokenAddress, amount));
     }
 
     function checkLT(
@@ -155,7 +174,46 @@ contract DreamAcademyLending {
         return false;
     }
 
+    function checkLT(
+        address user,
+        address tokenAddress,
+        uint256 amount
+    ) internal returns (bool) {
+        require(getAccruedSupplyAmount(tokenAddress) >= amount);
+
+        uint256 LT = ((getAccruedSupplyAmount(tokenAddress) -
+            (amount * dreamOracle.getPrice(tokenAddress)) /
+            1e18) * liquidThreshold) / 100;
+
+        if (LT >= _totalBorrowed[msg.sender]) {
+            return true;
+        }
+        return false;
+    }
+
     function getBorrowInterestRate(
+        uint256 amount
+    ) internal returns (uint256 interestRate) {
+        uint256 blockDist = (block.number - _borrwedTime[msg.sender]);
+        interestRate = amount;
+        if (blockDist >= 500) {
+            blockDist -= blockDist % 500;
+
+            while (blockDist > 0) {
+                blockDist -= (86400 / 12) * 500;
+                interestRate =
+                    ((interestRate * (16483094164129481))) /
+                    (10000000000000000);
+            }
+        } else {
+            interestRate =
+                ((interestRate * INTEREST_RATE ** blockDist)) /
+                (INTEREST_RATE2 ** blockDist);
+        }
+    }
+
+    function getBorrowInterestRate(
+        address user,
         uint256 amount
     ) internal returns (uint256 interestRate) {
         uint256 blockDist = (block.number - _borrwedTime[msg.sender]);
